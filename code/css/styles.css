@@ -1,0 +1,48 @@
+body {
+    background-color: black;
+  }
+  
+  .grid-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .grid {
+    width: 300px;
+    height: 600px;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .grid div {
+    width: 30px;
+    height: 30px;
+    border: 1px solid grey;
+  }
+  
+  .grid div.shape {
+    border: 1px solid grey;
+  }
+  
+  .grid div.tShape {
+    background-color: blue;
+  }
+  
+  .grid div.zigzagShape {
+    background-color: red;
+  }
+  
+  .grid div.lineShape {
+    background-color: green;
+  }
+  
+  .grid div.squareShape {
+    background-color: yellow;
+  }
+  
+  .grid div.lShape {
+    background-color: purple;
+  }
+  
