@@ -1,48 +1,49 @@
 body {
-    background-color: black;
-  }
-  
-  .grid-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
-  
-  .grid {
-    width: 300px;
-    height: 600px;
-    display: flex;
-    flex-wrap: wrap;
-  }
-  
-  .grid div {
-    width: 30px;
-    height: 30px;
-    border: 1px solid grey;
-  }
-  
-  .grid div.shape {
-    border: 1px solid grey;
-  }
-  
-  .grid div.tShape {
-    background-color: blue;
-  }
-  
-  .grid div.zigzagShape {
-    background-color: red;
-  }
-  
-  .grid div.lineShape {
-    background-color: green;
-  }
-  
-  .grid div.squareShape {
-    background-color: yellow;
-  }
-  
-  .grid div.lShape {
-    background-color: purple;
-  }
-  
+  background-color: black;
+  overflow:hidden; /* prevent scrolling */
+}
+
+/* standard tetris size is 10x20 */
+.grid-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  width: 50vh;  /* 50% of the viewport height */
+  height: 100vh;  /* 100% of the viewport height */
+}
+
+.grid div {
+  border: 1px solid grey;
+}
+
+.grid div.tShape {
+  background-color: blue;
+}
+
+.grid div.zigzagShape {
+  background-color: red;
+}
+
+.grid div.lineShape {
+  background-color: green;
+}
+
+.grid div.squareShape {
+  background-color: yellow;
+}
+
+.grid div.lShape {
+  background-color: purple;
+}
+
+/* .grid div.currentShape {
+  background-color: orange;
+} */
+
