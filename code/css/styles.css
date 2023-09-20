@@ -12,6 +12,7 @@ body {
   height: 100vh;
   position: relative;
   transform: translateX(-5%);
+  overflow: hidden; /* Hide any overflow content */
 }
 
 .grid {
@@ -88,4 +89,21 @@ body {
   align-items: center;
 }
 
-
+.speed-rank {
+  position: absolute;
+  left: 70%;
+  top: 20%;
+  border: 2px solid white;
+  padding: 20px;
+  background-color: black#333;
+  color: white;
+}
+.next-shape {
+  position: absolute;
+  left: 70%;
+  justify-content: center;
+  border: 2px solid white;
+  padding: 20px;
+  background-color: black#333;
+  color: white;
+}

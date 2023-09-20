@@ -6,19 +6,21 @@ const height = 20;
 const cellCount = width * height;
 let cells = [];
 let currentShape;
-let currentPosition = Math.floor(width / 2) - 1;
+let currentPosition = Math.floor(width / 2);
 let timerId; // rate of fall
 let baseInterval = 2000;
 let interval = baseInterval; //speed control
 let deletedRows = 0;
 let isPaused = false; // Make sure the game is not paused
 let score = 0;
-let speedRank = 1;
-let maxSpeedRank = Infinity;
-let nextShape;
-let canSpawnShape = true;
+let speedRank = 1;  
+let maxSpeedRank = Infinity;  
+let nextShape;  
+
+
 
 // shapes
+
 const tShape = { indices: [1, width + 1, width * 2 + 1, width + 2], type: 'tShape' };
 const zigzagShape = { indices: [width, width + 1, 1, 2], type: 'zigzagShape' };
 const lineShape = { indices: [1, width + 1, width * 2 + 1, width * 3 + 1], type: 'lineShape' };
@@ -30,9 +32,12 @@ const mirroredLShape = { indices: [1, width + 1, width * 2 + 1, width * 2], type
 const shapes = [tShape, zigzagShape, lineShape, lineShape, lineShape, squareShape, lShape, mirroredZigzagShape, mirroredLShape];
 
 
+
+
+
 // ! Functions
 
-// Create the grid
+// grid
 function createGrid() {
     for (let i = 0; i < cellCount; i++) {
         const cell = document.createElement('div');
@@ -40,9 +45,11 @@ function createGrid() {
         grid.appendChild(cell);
         cells.push(cell);
     }
+    // drawShape();
 }
 
-// Draw the shape on the grid
+
+// draw shape
 function drawShape() {
     currentShape.indices.forEach(index => {
         const cell = cells[currentPosition + index];
@@ -51,7 +58,8 @@ function drawShape() {
     });
 }
 
-// Remove the shape from the grid
+
+// remove shape
 function removeShape() {
     currentShape.indices.forEach(index => {
         const cell = cells[currentPosition + index];
@@ -60,7 +68,7 @@ function removeShape() {
     });
 }
 
-// Randomly select a shape
+// Random selection of shape
 function getRandomShape() {
     const randomIndex = Math.floor(Math.random() * shapes.length);
     return shapes[randomIndex];
@@ -68,23 +76,19 @@ function getRandomShape() {
 
 // movement
 function handleMovement(event) {
-    const key = event.key;
+    console.log("New Position:", newPosition);
+console.log("Is In Bounds:", isInBounds(currentShape, newPosition));
+
     let newPosition = currentPosition;
+    const key = event.key;
 
     removeShape();
-
     if (key === 's') {
         newPosition += width;
     } else if (key === 'a') {
-        // Only move left if not at LB
-        if (!isAtLeftBoundary(currentShape, currentPosition)) {
-            newPosition--;
-        }
+        newPosition--;
     } else if (key === 'd') {
-        // Only move right if not at RB
-        if (!isAtRightBoundary(currentShape, currentPosition)) {
-            newPosition++;
-        }
+        newPosition++;
     } else if (key === 'j') {
         rotateShape();
     } else if (key === 'p') {
@@ -92,45 +96,32 @@ function handleMovement(event) {
         return;
     }
 
-    // Correct shape
-    newPosition = naughtyShape(currentShape, newPosition);
+    removeShape();
 
     if (isInBounds(currentShape, newPosition)) {
         currentPosition = newPosition;
     }
 
     drawShape();
-}
+    console.log("New Position:", newPosition);
+console.log("Is In Bounds:", isInBounds(currentShape, newPosition));
 
-//LB function
-function isAtLeftBoundary(shape, position) {
-    return shape.indices.some(index => {
-        const cellIndex = position + index;
-        const relativeX = cellIndex % width;
-        return relativeX === 0;
-    });
-}
-// RB function
-function isAtRightBoundary(shape, position) {
-    return shape.indices.some(index => {
-        const cellIndex = position + index;
-        const relativeX = cellIndex % width;
-        return relativeX === width - 1;
-    });
 }
 
 
-// Rotate the shape 90 degrees
+// rotate shape 90 degrees
 function rotateShape() {
+    console.log("Old Shape Indices:", currentShape.indices);
+console.log("New Shape Indices:", newShape.indices);
+
+    console.log("Before rotation:", currentShape.indices);
     const pivot = currentShape.indices[1]; // anchor of pivot is the second index
     const newShape = { indices: [], type: currentShape.type };
 
-    // Attempt to rotate the shape
     currentShape.indices.forEach(index => {
         const x = (index % width) - (pivot % width);
         const y = Math.floor(index / width) - Math.floor(pivot / width);
 
-        // Rotate 90 degrees clockwise
         const rotatedX = -y;
         const rotatedY = x;
 
@@ -138,75 +129,48 @@ function rotateShape() {
 
         newShape.indices.push(newIndex);
     });
+    console.log("Old Shape Indices:", currentShape.indices);
+console.log("New Shape Indices:", newShape.indices);
 
-    // check IB
-    if (isInBounds(newShape, currentPosition)) {
-        removeShape();
-        currentShape = newShape;
-        drawShape();
-    } else {
-        // Try to "kick" the shape into a valid position
-        const kickOffsets = [-1, 1];
-        for (const offset of kickOffsets) {
-            if (isInBounds(newShape, currentPosition + offset)) {
-                removeShape();
-                currentPosition += offset;
-                currentShape = newShape;
-                drawShape();
-                break;
-            }
-        }
-    }
 }
 
+    // check out of bounds or overlap
+    function isInBounds(shape, position) {
+        return shape.indices.every(index => {
+            const cellIndex = position + index;
+            const isInGrid = cellIndex >= 0 && cellIndex < cellCount;
+            const isNotFull = !cells[cellIndex]?.classList.contains('full');
+            const isInLBoundary = (cellIndex % width) >= (position % width);
+            const isInRBoundary = (cellIndex % width) <= (position % width) + (shape.indices.reduce((max, cur) => Math.max(max, cur % width), 0));
+            
+            return isInGrid && isNotFull && isInLBoundary && isInRBoundary;
+        });
+    }
+    
 
 
-// Check if shape is in boundaries of grid and other shapes
+
+
+// make sure shape can rotate within boundaries of grid/other shapes
 function isInBounds(shape, position) {
-    let isInsideLeftBoundary = true;
-    let isInsideRightBoundary = true;
-
-    const isInGridAndNotFull = shape.indices.every(index => {
+    
+    return shape.indices.every(index => {
         const cellIndex = position + index;
         const isInGrid = cellIndex >= 0 && cellIndex < cellCount;
         const isNotFull = !cells[cellIndex]?.classList.contains('full');
-        return isInGrid && isNotFull;
+        
+        // L and R boundaries
+        const isInLBoundary = (cellIndex % width) >= (position % width);
+        const isInRBoundary = (cellIndex % width) <= (position % width) + (shape.indices.reduce((max, cur) => Math.max(max, cur % width), 0));
+        
+        console.log("cellIndex:", cellIndex, "isInGrid:", isInGrid, "isNotFull:", isNotFull, "isInLBoundary:", isInLBoundary, "isInRBoundary:", isInRBoundary);
+        
+        return isInGrid && isNotFull && isInLBoundary && isInRBoundary;
     });
+    console.log("cellIndex:", cellIndex, "isInGrid:", isInGrid, "isNotFull:", isNotFull, "isInLBoundary:", isInLBoundary, "isInRBoundary:", isInRBoundary);
 
-    if (isInGridAndNotFull) {
-        // Check the boundary conditions
-        shape.indices.forEach(index => {
-            const cellIndex = position + index;
-            const relativeX = cellIndex % width;
-
-            // If any part of shape would be outside LB, set the flag
-            if (relativeX < 0) isInsideLeftBoundary = false;
-
-            // If any part of shape would be outside RB, set the flag
-            if (relativeX >= width) isInsideRightBoundary = false;
-        });
-    }
-
-    return isInGridAndNotFull && isInsideLeftBoundary && isInsideRightBoundary;
 }
 
-// function to stop the shape being naughty and escaping the boundary
-function naughtyShape(shape, position) {
-    let minX = Infinity, maxX = -Infinity;
-    shape.indices.forEach(index => {
-        const cellIndex = position + index;
-        const relativeX = cellIndex % width;
-        minX = Math.min(minX, relativeX);
-        maxX = Math.max(maxX, relativeX);
-    });
-
-    if (minX < 0) {
-        return position - minX;
-    } else if (maxX >= width) {
-        return position - (maxX - width + 1);
-    }
-    return position;
-}
 
 
 // row deletion
@@ -218,14 +182,16 @@ function deleteRow() {
             rowsToDelete.push(y);
         }
     }
-    // Delete multiple rows at once
+    // delete multiple rows at once
     rowsToDelete.forEach(y => {
         const row = Array.from({ length: width }, (_, x) => y * width + x);
         row.forEach(index => {
             cells[index].classList.remove('full');
             cells[index].className = '';
         });
-        // Move all rows above the deleted ones down
+    });
+    // move all rows above the deleted ones down
+    rowsToDelete.forEach(y => {
         for (let aboveY = y - 1; aboveY >= 0; aboveY--) {
             const aboveRow = Array.from({ length: width }, (_, x) => aboveY * width + x);
             aboveRow.forEach(index => {
@@ -240,6 +206,7 @@ function deleteRow() {
     });
     // Update the score
     scoreCal(rowsToDelete.length);
+    console.log("Rows to delete:", rowsToDelete);
     deletedRows += rowsToDelete.length;
     speedRank = Math.min(Math.floor(deletedRows / 10) + 1, maxSpeedRank);
     interval = baseInterval / speedRank;
@@ -247,7 +214,6 @@ function deleteRow() {
     timerId = setInterval(moveDown, interval);
     document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
 }
-
 
 // move down
 function moveDown() {
@@ -258,31 +224,26 @@ function moveDown() {
     if (isInBounds(currentShape, newPosition)) {
         currentPosition = newPosition;
     } else {
-        // Shape has landed
+        // shape has landed, mark it as 'full'
         currentShape.indices.forEach(index => {
             const cell = cells[currentPosition + index];
             cell.classList.add('full');
-            cell.classList.add(currentShape.type);
+            cell.classList.add(currentShape.type); // Add the shape type class for color
         });
 
-        // Only spawn a new shape if it's okay to do so
-        if (canSpawnShape) {
-            canSpawnShape = false;
+        // delete rows BEFORE checking if the game is over
+        deleteRow();
 
-            // Delete rows BEFORE checking if the game is over
-            deleteRow();
-
-            // Check if game over
-            if (isGameOver()) {
-                return;
-            }
-
-            // Generate a new shape
-            currentShape = nextShape;
-            nextShape = getRandomShape();
-            currentPosition = Math.floor(width / 2);
-            canSpawnShape = true;  // allow new shape spawn
+        // Check if game over
+        if (isGameOver()) {
+            return;
         }
+
+        // generate a new shape
+        currentShape = nextShape;
+        nextShape = getRandomShape();
+        currentPosition = Math.floor(width / 2);
+        drawShape();
     }
 
     drawShape();
@@ -291,10 +252,11 @@ function moveDown() {
 
 
 
-// game over
+// game over 
 function isGameOver() {
-    const topLeftCorner = [0, 1, width, width + 1];
-    if (topLeftCorner.some(index => cells[index]?.classList.contains('full'))) {
+    console.log("Top Row Full Cells:", topRows.filter(index => cells[index].classList.contains('full')));
+    const topRows = Array.from({ length: width }, (_, i) => i);
+    if (topRows.some(index => cells[index]?.classList.contains('full'))) {
         clearInterval(timerId);
         if (confirm('Game Over. Click OK to restart.')) {
             restartGame();
@@ -305,7 +267,6 @@ function isGameOver() {
 }
 
 
-// Scoring function
 function scoreCal(rowsDeleted) {
     // scoring based on google 
     if (rowsDeleted === 1) {
@@ -320,9 +281,25 @@ function scoreCal(rowsDeleted) {
     document.querySelector('.score').innerText = `Score: ${score}`;
 }
 
+
+
+
+// sound
+
+
+
+
+
+
+
 // Toggle pause
 function togglePause() {
+    //console.log("Clearing interval");
+    //clearInterval(timerId);  // clear existing timer
+
     if (isPaused) {
+        //console.log("Setting interval");
+        //timerId = setInterval(moveDown, interval);  // Set new timer
         pauseText.style.display = 'none'; // hide
     } else {
         pauseText.style.display = 'block'; // show
@@ -330,18 +307,16 @@ function togglePause() {
     isPaused = !isPaused;
 }
 
-// Start game
+// start game
 function startGame() {
-    nextShape = getRandomShape();  // nextShape first
     currentPosition = Math.floor(width / 2);
     currentShape = getRandomShape();
+    nextShape = getRandomShape();
     drawShape();
+    timerId = setInterval(moveDown, interval);
     document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
     document.querySelector('.next-shape').innerText = `Next Shape: ${nextShape.type}`;
-    clearInterval(timerId);  // Clear any existing interval
-    timerId = setInterval(moveDown, interval);  // Set a new interval
 }
-
 
 
 // Reset score function
@@ -349,7 +324,6 @@ function resetScore() {
     score = 0;
     document.querySelector('.score').innerText = `Score: ${score}`;
 }
-
 // Restart Game
 function restartGame() {
     clearInterval(timerId);
@@ -362,7 +336,29 @@ function restartGame() {
     startGame();
 }
 
-// ! Remaining buttons and event listeners
+
+
+// ! buttons
+
+// pause
+
+// sound button
+
+// play again
+
+// controls
+
+currentShape = getRandomShape() // make random shape
+
+document.addEventListener('keydown', handleMovement);
+window.addEventListener('DOMContentLoaded', () => {
+    createGrid();
+    startGame(); // start  game when DOM fully loaded
+    //score
+    document.querySelector('.score').innerText = `Score: ${score}`;
+    document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
+    document.querySelector('.next-shape').innerText = `Next Shape: ${nextShape.type}`;
+});
 
 const restartButton = document.querySelector('.restart');
 restartButton.addEventListener('click', () => {
@@ -370,16 +366,3 @@ restartButton.addEventListener('click', () => {
     togglePause();
 });
 
-// Main game loop
-
-document.addEventListener('keydown', handleMovement);
-window.addEventListener('DOMContentLoaded', () => {
-    createGrid();
-    startGame(); // start the game when DOM fully loaded
-    // score
-    document.querySelector('.score').innerText = `Score: ${score}`;
-    //SR
-    document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
-    // NS
-    document.querySelector('.next-shape').innerText = `Next Shape: ${nextShape.type}`;
-});
