@@ -1,20 +1,59 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   background-color: black;
   overflow: hidden;
   /* prevent scrolling */
 }
-
-/* standard tetris size is 10x20 */
-.grid-container {
+.container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  position: relative;
-  transform: translateX(-5%);
-  overflow: hidden; /* Hide any overflow content */
 }
 
+.grid-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  position: relative;
+}
+
+.score-container {
+  font-size: 24px;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  justify-content: center;
+}
+
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 20px;
+}
+
+.speed-rank,
+.next-shape,
+.controls {
+  margin-bottom: 10px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+}
+
+.next-shape {
+  width: 150px;
+  height: 200px;
+}
 .grid {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
@@ -25,53 +64,59 @@ body {
   /* 100% of the viewport height */
   border: 1px solid white;
 }
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 20px);
+  grid-template-rows: repeat(4, 20px);
+  gap: 2px;
+
+}
+
+
+
 
 .grid div {
+  width: 5vh; 
+  height: 5vh; 
   border: 1px solid rgba(255, 255, 255, 0);
 }
 
 .grid div.tShape {
-  background-color: blue;
-  border: 1px solid grey
+  background: linear-gradient(45deg, deepskyblue, blue);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 0, 255, 0.5);
 }
 
 .grid div.zigzagShape {
-  background-color: red;
-  border: 1px solid grey
+  background: linear-gradient(45deg, tomato, red);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 0, 0, 0.5);
 }
 
 .grid div.lineShape {
-  background-color: green;
-  border: 1px solid grey
+  background: linear-gradient(45deg, limegreen, green);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 128, 0, 0.5);
 }
 
 .grid div.squareShape {
-  background-color: yellow;
-  border: 1px solid grey
+  background: linear-gradient(45deg, lightyellow, yellow);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 0, 0.5);
 }
 
 .grid div.lShape {
-  background-color: purple;
-  border: 1px solid grey
+  background: linear-gradient(45deg, violet, purple);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(128, 0, 128, 0.5);
 }
 
 .grid div.mirroredZigzagShape {
-  background-color: rgb(255, 196, 0);
-  border: 1px solid grey
+  background: linear-gradient(45deg, rgb(255, 216, 0), rgb(255, 196, 0));
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(204, 157, 0, 0.5);
 }
 
 .grid div.mirroredLShape {
-  background-color: rgb(0, 204, 255);
-  border: 1px solid grey
+  background: linear-gradient(45deg, rgb(0, 224, 255), rgb(0, 204, 255));
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 164, 204, 0.5);
 }
-.score {
-  position: absolute;
-  left: -55%;
-  top: 20%; 
-  font-size: 24px;
-  color: white;
-  text-align: center;
-}
+
+
 .pause-text {
   position: absolute;
   font-size: 2em;
@@ -83,27 +128,87 @@ body {
   transform: translate(-50%, -50%);
   text-align: center;
 }
-.container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
 
 .speed-rank {
-  position: absolute;
+  /* position: absolute;
   left: 70%;
-  top: 20%;
+  top: 20%; */
   border: 2px solid white;
   padding: 20px;
   background-color: black#333;
   color: white;
 }
 .next-shape {
-  position: absolute;
+  /* position: absolute;
   left: 70%;
-  justify-content: center;
-  border: 2px solid white;
+  justify-content: center; */
+  /* border: 2px solid white; */
   padding: 20px;
   background-color: black#333;
   color: white;
 }
+
+/* animations */
+
+.level-up-animation {
+  animation: levelUp 1s ease-in-out;
+}
+
+@keyframes levelUp {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.row-deletion-animation {
+  animation: explode 0.5s ease-in-out forwards;
+}
+
+@keyframes explode {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+.got-tetris {
+  display: none; /* Hidden by default */
+  font-size: 2em;
+  color: gold;  
+  font-weight: bold;
+  text-align: center;
+}
+
+.tetris-animation {
+  animation: tetrisFlash 1s ease-in-out 3; 
+}
+
+@keyframes tetrisFlash {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.ghostShape {
+  background-color: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.5); /* White border w/50% opacity */
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.75), /* Horizontal, vertical, blur, colour */
+              0 0 10px rgba(255, 255, 255, 0.5), 
+              0 0 15px rgba(255, 255, 255, 0.25);
+}
+

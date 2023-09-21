@@ -10,24 +10,44 @@
 
 <body>
   <div class="container">
+
+    <button id="start-game">Start Game</button>
+
     <div class="grid-container">
       <div class="score-container">
-        <div class="score">
-          <div id="score">Score: 0</div>
+        <div id="score">Score: 0</div>
+        <div class="got-tetris">
+          <p>TETRIS!</p>
         </div>
       </div>
       <div class="grid">
+      </div>
+      <div class="control-panel">
+        <div class="speed-rank">Speed Rank: 1</div>
+        <div class="next-shape">
+          <div class="next-shape-name">Next Shape: </div>
+          <img id="next-shape-img" src="" alt="Next shape image" style="display: none;">
+        </div>
+        <div class="controls">
+          <button id="toggle-bg-music">Toggle Music</button>
+          <button id="toggle-sfx">Toggle SFX</button>
+
+        </div>
       </div>
       <div class="pause-text">
         <p>PAUSED</p>
         <button class="restart">Restart</button>
       </div>
     </div>
-    <div class="speed-rank">Speed Rank: 1</div>
-    <div class="next-shape">Next Shape: </div>
   </div>
-    
+  <audio id="drop-sound" src="./audio/dropSound.mp3"></audio>
+  <audio id="bg-music" loop src="./audio/bgMusic.mp3"></audio>
+  <audio id="game-over-sound" src="./audio/gameOverSound.mp3"></audio>
+  <audio id="speed-rank-up-sound" src="./audio/levelUpSound.mp3"></audio>
+  <audio id="row-deletion-sound" src="./audio/rowDeletion.mp3"></audio>
+  <audio id="tetrisSound" src="./audio/tetrisSound.mp3"></audio>
   <script src="./js/scripts.js" charset="utf-8"></script>
 </body>
+
 
 </html>

@@ -1,6 +1,14 @@
 // ! Variables
 const grid = document.querySelector('.grid');
 const pauseText = document.querySelector('.pause-text');
+const bgMusic = document.getElementById('bg-music');
+const dropSound = document.getElementById('drop-sound');
+const speedRankUpSound = document.getElementById('speed-rank-up-sound');
+const gameOverSound = document.getElementById('game-over-sound');
+const speedRankElement = document.querySelector('.speed-rank');
+const rowDeletionSound = document.getElementById('row-deletion-sound');
+const tetrisSound = document.getElementById('tetrisSound');
+const gotTetris = document.querySelector('.got-tetris');
 const width = 10;
 const height = 20;
 const cellCount = width * height;
@@ -17,6 +25,11 @@ let speedRank = 1;
 let maxSpeedRank = Infinity;
 let nextShape;
 let canSpawnShape = true;
+let isBgMusicOn = true;
+let isDropSoundOn = true;
+let previousSpeedRank = 1;
+let ghostShape;
+let ghostPosition;
 
 // shapes
 const tShape = { indices: [1, width + 1, width * 2 + 1, width + 2], type: 'tShape' };
@@ -55,6 +68,7 @@ function drawShape() {
 
 // Remove the shape from the grid
 function removeShape() {
+    if (!currentShape) return;
     currentShape.indices.forEach(index => {
         const cell = cells[currentPosition + index];
         if (cell) {  // Check if cell exists
@@ -71,12 +85,89 @@ function getRandomShape() {
     return shapes[randomIndex];
 }
 
+function nextShapePreview() {
+    if (!nextShape) return;
+    const imgElement = document.getElementById('next-shape-img');
+    imgElement.src = `assets/${nextShape.type}.png`;
+    imgElement.alt = `${nextShape.type} image`;
+}
+
+// Update the ghost position
+function updateGhostPosition() {
+    let tempPosition = currentPosition;
+    while (isInBounds(currentShape, tempPosition + width)) {
+        tempPosition += width;
+    }
+    ghostPosition = tempPosition;
+}
+
+// Draw the ghost shape
+function drawGhostShape() {
+    currentShape.indices.forEach(index => {
+        const cell = cells[ghostPosition + index];
+        if (cell) {  // Check if cell exists
+            cell.classList.add('ghostShape');
+        }
+    });
+}
+
+// Remove the ghost shape from the grid
+function removeGhostShape() {
+    currentShape.indices.forEach(index => {
+        const cell = cells[ghostPosition + index];
+        if (cell) {  // Check if cell exists
+            cell.classList.remove('ghostShape');
+        }
+    });
+}
+
+function hardDrop() {
+    let newPosition = currentPosition;
+    removeShape();
+    while (isInBounds(currentShape, newPosition + width)) {
+        newPosition += width;
+    }
+    currentPosition = newPosition;
+    drawShape();
+
+    if (isDropSoundOn) {
+        dropSound.currentTime = 0;
+        dropSound.play();
+    }
+
+    // Mark the shape's cells as "full"
+    currentShape.indices.forEach(index => {
+        const cell = cells[currentPosition + index];
+        if (cell) {  // Check if cell exists before trying to modify it
+            cell.classList.add('full');
+            cell.classList.add(currentShape.type);
+        }
+    });
+
+    deleteRow();
+
+    // Update shape and position 
+    currentShape = nextShape;
+    nextShape = getRandomShape();
+    currentPosition = Math.floor(width / 2);
+
+    // Draw new shape and update next shape preview
+    drawShape();
+    nextShapePreview();
+}
+
+
+
+
 // movement
 function handleMovement(event) {
+
+    if (!currentShape) return;
     const key = event.key;
     let newPosition = currentPosition;
 
     removeShape();
+    removeGhostShape();
 
     if (key === 's') {
         newPosition += width;
@@ -95,7 +186,11 @@ function handleMovement(event) {
     } else if (key === 'p') {
         togglePause();
         return;
+    } else if (key === ' ') {
+        hardDrop();
+        return;
     }
+
 
     // Correct shape
     newPosition = naughtyShape(currentShape, newPosition);
@@ -105,6 +200,8 @@ function handleMovement(event) {
     }
 
     drawShape();
+    updateGhostPosition();
+    updateGhostShape();
 }
 
 //LB function
@@ -213,10 +310,6 @@ function rotateShape() {
     }
 }
 
-
-
-
-
 // Check if shape is in boundaries of grid and other shapes
 function isInBounds(shape, position) {
     let isInsideLeftBoundary = true;
@@ -275,62 +368,133 @@ function deleteRow() {
         }
     }
 
-
     // Sort rows in descending order
     rowsToDelete.sort((a, b) => b - a);
-    console.log("Sorted Rows to Delete:", rowsToDelete);
 
-    // Delete multiple rows at once
+    // Add animation and schedule removal
     rowsToDelete.forEach(y => {
-        console.log("Deleting row:", y); // Log the row being deleted
-
-        // Remove 'full' and clear className
         const row = Array.from({ length: width }, (_, x) => y * width + x);
         row.forEach(index => {
-            cells[index].classList.remove('full');
-            cells[index].className = '';
+            cells[index].classList.add('row-deletion-animation');
         });
-
     });
 
-    // Move above deleted rows down, AFTER all deletions
-    if (rowsToDelete.length > 0) {
-        for (let aboveY = rowsToDelete[0] - 1; aboveY >= 0; aboveY--) {
-            const aboveRow = Array.from({ length: width }, (_, x) => aboveY * width + x);
-            const rowsBelow = rowsToDelete.filter(row => row > aboveY).length; // Number of deleted rows below this one
-            aboveRow.forEach(index => {
-                if (cells[index].classList.contains('full')) {
-                    cells[index + (width * rowsBelow)].className = cells[index].className;  // Move down by 'rowsBelow' rows
-                    cells[index + (width * rowsBelow)].classList.add('full');  // Move down by 'rowsBelow' rows
-                    cells[index].classList.remove('full');
-                    cells[index].className = '';
-                }
+    // Handle animation completion, delete rows, and move cells down
+    setTimeout(() => {
+        // Delete the rows
+        rowsToDelete.forEach(y => {
+            const row = Array.from({ length: width }, (_, x) => y * width + x);
+            row.forEach(index => {
+                cells[index].classList.remove('row-deletion-animation', 'full');
+                cells[index].className = '';
             });
+        });
+
+        // Move above deleted rows down, AFTER all deletions
+        if (rowsToDelete.length > 0) {
+            for (let aboveY = rowsToDelete[0] - 1; aboveY >= 0; aboveY--) {
+                const aboveRow = Array.from({ length: width }, (_, x) => aboveY * width + x);
+                const rowsBelow = rowsToDelete.filter(row => row > aboveY).length;
+                aboveRow.forEach(index => {
+                    if (cells[index].classList.contains('full')) {
+                        cells[index + (width * rowsBelow)].className = cells[index].className;
+                        cells[index + (width * rowsBelow)].classList.add('full');
+                        cells[index].classList.remove('full');
+                        cells[index].className = '';
+                    }
+                });
+            }
         }
+        // Update the score
+        scoreCal(rowsToDelete.length);
+        deletedRows += rowsToDelete.length;
+        speedRank = Math.min(Math.floor(deletedRows / 10) + 1, maxSpeedRank);
+        interval = baseInterval / speedRank;
+        clearInterval(timerId);
+        timerId = setInterval(moveDown, interval);
+        // row deletion sound
+        if (rowsToDelete.length >= 1 && rowsToDelete.length <= 3) {
+            rowDeletionSound.currentTime = 0;
+            rowDeletionSound.play();
+        }
+        // Check if 4 rows are deleted at once (Tetris!)
+        if (rowsToDelete.length === 4) {
+            tetrisSound.currentTime = 0;
+            tetrisSound.play();
+            gotTetris.style.display = 'block';
+            gotTetris.classList.add('tetris-animation');
+
+            // Hide the tetris + remove animation after
+            setTimeout(() => {
+                gotTetris.style.display = 'none';
+                gotTetris.classList.remove('tetris-animation');
+            }, 3000);
+        }
+
+        // Check if speed rank has increased
+
+        if (speedRank > previousSpeedRank) {
+            speedRankUpSound.currentTime = 0;
+            speedRankUpSound.play();
+            speedRankElement.innerText = `Speed Rank: ${speedRank}`;
+            speedRankElement.classList.add('level-up-animation');
+            // Speed up  bg music by 10%
+            bgMusic.playbackRate += 0.1;
+            // Remove the animation class after it completes
+            setTimeout(() => {
+                speedRankElement.classList.remove('level-up-animation');
+            }, 1000);
+        }
+
+        // Update the previous speed rank
+        previousSpeedRank = speedRank;
+    }, 500);
+}
+
+
+function updateGhostShape() {
+    // Remove existing ghost shape from the grid
+    removeGhostShape();
+
+    // Duplicate the current shape to create a ghost shape
+    ghostShape = JSON.parse(JSON.stringify(currentShape));
+
+    // Find the lowest possible position for the ghost shape
+    let ghostPosition = currentPosition;
+    while (isInBounds(ghostShape, ghostPosition + width)) {
+        ghostPosition += width;
     }
-    
-    // Update the score
-    scoreCal(rowsToDelete.length);
-    deletedRows += rowsToDelete.length;
-    speedRank = Math.min(Math.floor(deletedRows / 10) + 1, maxSpeedRank);
-    interval = baseInterval / speedRank;
-    clearInterval(timerId);
-    timerId = setInterval(moveDown, interval);
-    document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
+
+    // Draw the ghost shape at that position
+    ghostShape.indices.forEach(index => {
+        const cell = cells[ghostPosition + index];
+        if (cell) {
+            cell.classList.add('ghostShape');
+        }
+    });
 }
 
 
 
 // move down
 function moveDown() {
+
     if (isPaused) return;
     removeShape();
+    removeGhostShape();
     let newPosition = currentPosition + width;
 
     if (isInBounds(currentShape, newPosition)) {
         currentPosition = newPosition;
     } else {
         // Shape has landed
+        // drop sound
+        if (isDropSoundOn) {
+            dropSound.currentTime = 0;  // Start from the beginning
+            dropSound.play();  // Play the sound
+        }
+
+
         currentShape.indices.forEach(index => {
             const cell = cells[currentPosition + index];
             cell.classList.add('full');
@@ -353,12 +517,18 @@ function moveDown() {
             currentShape = nextShape;
             nextShape = getRandomShape();
             currentPosition = Math.floor(width / 2);
+
+            nextShapePreview();
+
             canSpawnShape = true;  // allow new shape spawn
         }
     }
 
     drawShape();
-    document.querySelector('.next-shape').innerText = `Next Shape: ${nextShape.type}`;
+    updateGhostPosition();
+    updateGhostShape();
+    document.querySelector('.next-shape-name').innerText = `Next Shape: ${nextShape.type}`;
+
 }
 
 
@@ -374,12 +544,16 @@ function isGameOver() {
 
     if (topLeftFull || shapeInTopRow) {
         clearInterval(timerId);
+        gameOverSound.currentTime = 0;
+        gameOverSound.play();
         if (confirm('Game Over. Click OK to restart.')) {
             restartGame();
         }
         return true;
     }
     return false;
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
 }
 
 
@@ -395,37 +569,58 @@ function scoreCal(rowsDeleted) {
     } else if (rowsDeleted >= 4) {
         score += 800 + (rowsDeleted - 4) * 400;
     }
-    document.querySelector('.score').innerText = `Score: ${score}`;
+    document.querySelector('#score').innerText = `Score: ${score}`;
 }
 
 // Toggle pause
 function togglePause() {
     if (isPaused) {
         pauseText.style.display = 'none'; // hide
+        if (isBgMusicOn) {
+            bgMusic.play();
+        }
     } else {
         pauseText.style.display = 'block'; // show
+        bgMusic.pause(); // pause the background music
     }
     isPaused = !isPaused;
 }
 
+
 // Start game
 function startGame() {
-    nextShape = getRandomShape();  // nextShape first
+    nextShape = getRandomShape(); // Set nextShape first
+    nextShapePreview(); // Update the next shape preview immediately
     currentPosition = Math.floor(width / 2);
-    currentShape = getRandomShape();
+    currentShape = nextShape; // Set currentShape as nextShape
+    nextShape = getRandomShape(); // Get a new nextShape
+    nextShapePreview();  // Update the next shape preview again
+
     drawShape();
     document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
-    document.querySelector('.next-shape').innerText = `Next Shape: ${nextShape.type}`;
+    document.querySelector('.next-shape-name').innerText = `Next Shape: ${nextShape.type}`;
     clearInterval(timerId);  // Clear any existing interval
     timerId = setInterval(moveDown, interval);  // Set a new interval
+    if (isBgMusicOn) {
+        bgMusic.play();
+    }
 }
 
-
+function initialiseGame() {
+    startGame();
+    // start the music
+    if (isBgMusicOn) {
+        bgMusic.play();
+    }
+    document.getElementById('start-game').style.display = 'none';  // Hide 
+    const imgElement = document.getElementById('next-shape-img');
+    imgElement.style.display = 'block'; // Show the image
+}
 
 // Reset score function
 function resetScore() {
     score = 0;
-    document.querySelector('.score').innerText = `Score: ${score}`;
+    document.querySelector('#score').innerText = `Score: ${score}`;
 }
 
 // Restart Game
@@ -447,17 +642,49 @@ restartButton.addEventListener('click', () => {
     restartGame();
     togglePause();
 });
+const toggleBgMusicButton = document.getElementById('toggle-bg-music');
+const toggleDropSoundButton = document.getElementById('toggle-sfx');
 
+// Toggle background music
+document.getElementById('toggle-bg-music').addEventListener('click', function () {
+    if (isBgMusicOn) {
+        bgMusic.pause();
+        this.textContent = 'Background Music: Off';
+    } else {
+        bgMusic.play();
+        this.textContent = 'Background Music: On';
+    }
+    isBgMusicOn = !isBgMusicOn;
+});
+
+// Toggle sound effects
+document.getElementById('toggle-sfx').addEventListener('click', function () {
+    if (isDropSoundOn) {
+        this.textContent = 'Sound Effects: Off';
+        dropSound.pause();  // Pause the sound
+        dropSound.currentTime = 0;  // Reset to start
+    } else {
+        this.textContent = 'Sound Effects: On';
+    }
+    isDropSoundOn = !isDropSoundOn;
+});
+
+// set the volume
+gameOverSound.volume = 1.0;
+tetrisSound.volume = 1.0;
 // Main game loop
-
+document.getElementById('start-game').addEventListener('click', function () {
+    initialiseGame();
+});
 document.addEventListener('keydown', handleMovement);
 window.addEventListener('DOMContentLoaded', () => {
     createGrid();
-    startGame(); // start the game when DOM fully loaded
     // score
-    document.querySelector('.score').innerText = `Score: ${score}`;
+    document.querySelector('#score').innerText = `Score: ${score}`;
     //SR
     document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
     // NS
-    document.querySelector('.next-shape').innerText = `Next Shape: ${nextShape.type}`;
+    if (nextShape) {
+        document.querySelector('.next-shape-name').innerText = `Next Shape: ${nextShape.type}`;
+    }
 });
