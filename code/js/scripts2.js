@@ -109,42 +109,69 @@ console.log("Is In Bounds:", isInBounds(currentShape, newPosition));
 }
 
 
-// rotate shape 90 degrees
+// Rotate the shape 90 degrees
 function rotateShape() {
-    console.log("Old Shape Indices:", currentShape.indices);
-console.log("New Shape Indices:", newShape.indices);
-
-    console.log("Before rotation:", currentShape.indices);
-    const pivot = currentShape.indices[1]; // anchor of pivot is the second index
+    let pivot;  
     const newShape = { indices: [], type: currentShape.type };
-
-    currentShape.indices.forEach(index => {
-        const x = (index % width) - (pivot % width);
-        const y = Math.floor(index / width) - Math.floor(pivot / width);
-
-        const rotatedX = -y;
-        const rotatedY = x;
-
-        const newIndex = pivot + rotatedX + rotatedY * width;
-
-        newShape.indices.push(newIndex);
-    });
-    console.log("Old Shape Indices:", currentShape.indices);
-console.log("New Shape Indices:", newShape.indices);
-
-}
-
-    // check out of bounds or overlap
-    function isInBounds(shape, position) {
-        return shape.indices.every(index => {
-            const cellIndex = position + index;
-            const isInGrid = cellIndex >= 0 && cellIndex < cellCount;
-            const isNotFull = !cells[cellIndex]?.classList.contains('full');
-            const isInLBoundary = (cellIndex % width) >= (position % width);
-            const isInRBoundary = (cellIndex % width) <= (position % width) + (shape.indices.reduce((max, cur) => Math.max(max, cur % width), 0));
-            
-            return isInGrid && isNotFull && isInLBoundary && isInRBoundary;
-        });
+  
+    // Special logic for annoying mirroredZigzagShape >:(
+    if (currentShape.type === 'mirroredZigzagShape') {
+        pivot = currentShape.indices[0];
+    } 
+    // Special logic for lineShape >:(
+        else if (currentShape.type === 'lineShape') {
+            if (currentShape.orientation === 'vertical') {
+                // convert to horizontal
+                newShape.indices = [0, 1, 2, 3];
+                newShape.orientation = 'horizontal';
+            } else {
+                // convert back to vertical
+                newShape.indices = [1, width + 1, width * 2 + 1, width * 3 + 1];
+                newShape.orientation = 'vertical';
+            }
+        } 
+        // all other shapes
+        else {
+            pivot = currentShape.indices[1];  // anchor of pivot is the second index
+    
+            // The rest of your rotation logic stays the same
+            currentShape.indices.forEach(index => {
+                const x = (index % width) - (pivot % width);
+                const y = Math.floor(index / width) - Math.floor(pivot / width);
+    
+                // Rotate 90 degrees clockwise
+                const rotatedX = -y;
+                const rotatedY = x;
+    
+                const newIndex = pivot + rotatedX + rotatedY * width;
+                newShape.indices.push(newIndex);
+            });
+        }
+    
+        // Check if in bounds
+        if (isInBounds(newShape, currentPosition)) {
+            removeShape();
+            currentShape.indices = newShape.indices;
+            if (newShape.orientation) {
+                currentShape.orientation = newShape.orientation; // Update the orientation if it exists
+            }
+            drawShape();
+        } else {
+            // "kick" the shape in bounds
+            const kickOffsets = [-1, 1, -width, width];
+            for (const offset of kickOffsets) {
+                if (isInBounds(newShape, currentPosition + offset)) {
+                    removeShape();
+                    currentPosition += offset;
+                    currentShape.indices = newShape.indices;
+                    if (newShape.orientation) {
+                        currentShape.orientation = newShape.orientation; // Update the orientation if it exists
+                    }
+                    drawShape();
+                    break;
+                }
+            }
+        }
     }
     
 

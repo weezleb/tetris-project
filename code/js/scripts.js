@@ -8,7 +8,7 @@ let cells = [];
 let currentShape;
 let currentPosition = Math.floor(width / 2) - 1;
 let timerId; // rate of fall
-let baseInterval = 2000;
+let baseInterval = 800;
 let interval = baseInterval; //speed control
 let deletedRows = 0;
 let isPaused = false; // Make sure the game is not paused
@@ -21,10 +21,10 @@ let canSpawnShape = true;
 // shapes
 const tShape = { indices: [1, width + 1, width * 2 + 1, width + 2], type: 'tShape' };
 const zigzagShape = { indices: [width, width + 1, 1, 2], type: 'zigzagShape' };
-const lineShape = { indices: [1, width + 1, width * 2 + 1, width * 3 + 1], type: 'lineShape' };
+const lineShape = { indices: [1, width + 1, width * 2 + 1, width * 3 + 1], type: 'lineShape', rotationState: 0 };
 const squareShape = { indices: [0, 1, width, width + 1], type: 'squareShape' };
 const lShape = { indices: [1, width + 1, width * 2 + 1, width * 2 + 2], type: 'lShape' };
-const mirroredZigzagShape = { indices: [width + 1, width + 2, 0, 1], type: 'mirroredZigzagShape' };
+const mirroredZigzagShape = { indices: [width + 1, width + 2, 0, 1], type: 'mirroredZigzagShape', rotationState: 0 };
 const mirroredLShape = { indices: [1, width + 1, width * 2 + 1, width * 2], type: 'mirroredLShape' };
 
 const shapes = [tShape, zigzagShape, lineShape, lineShape, lineShape, squareShape, lShape, mirroredZigzagShape, mirroredLShape];
@@ -46,8 +46,10 @@ function createGrid() {
 function drawShape() {
     currentShape.indices.forEach(index => {
         const cell = cells[currentPosition + index];
-        cell.classList.add('currentShape');
-        cell.classList.add(currentShape.type);
+        if (cell) {  // Check if cell exists
+            cell.classList.add('currentShape');
+            cell.classList.add(currentShape.type);
+        }
     });
 }
 
@@ -55,10 +57,13 @@ function drawShape() {
 function removeShape() {
     currentShape.indices.forEach(index => {
         const cell = cells[currentPosition + index];
-        cell.classList.remove('currentShape');
-        cell.classList.remove(currentShape.type);
+        if (cell) {  // Check if cell exists
+            cell.classList.remove('currentShape');
+            cell.classList.remove(currentShape.type);
+        }
     });
 }
+
 
 // Randomly select a shape
 function getRandomShape() {
@@ -122,42 +127,93 @@ function isAtRightBoundary(shape, position) {
 
 // Rotate the shape 90 degrees
 function rotateShape() {
-    const pivot = currentShape.indices[1]; // anchor of pivot is the second index
-    const newShape = { indices: [], type: currentShape.type };
+    const newShape = {
+        indices: [],
+        type: currentShape.type,
+        orientation: currentShape.orientation || null,
+        rotationState: (currentShape.rotationState || 0)
+    };
 
-    // Attempt to rotate the shape
-    currentShape.indices.forEach(index => {
-        const x = (index % width) - (pivot % width);
-        const y = Math.floor(index / width) - Math.floor(pivot / width);
+    // specific for mean MZZS >:(
+    if (currentShape.type === 'mirroredZigzagShape') {
+        // first block pivot point
+        const pivotIndex = currentShape.indices[0];
+        const pivotX = pivotIndex % width;
+        const pivotY = Math.floor(pivotIndex / width);
 
-        // Rotate 90 degrees clockwise
-        const rotatedX = -y;
-        const rotatedY = x;
+        // rotate around pivot point
+        newShape.indices = currentShape.indices.map(index => {
+            const x = index % width - pivotX;
+            const y = Math.floor(index / width) - pivotY;
 
-        const newIndex = pivot + rotatedX + rotatedY * width;
+            // rotation logic
+            const rotatedX = -y;
+            const rotatedY = x;
 
-        newShape.indices.push(newIndex);
-    });
+            // translate to the grid
+            return (pivotY + rotatedY) * width + (pivotX + rotatedX);
+        });
+    }
+    // specific for stinky LS
+    else if (currentShape.type === 'lineShape') {
+        console.log("Before Rotation, currentShape.rotationState:", currentShape.rotationState);
 
-    // check IB
+        const lineRotations = [
+            [1, width + 1, width * 2 + 1, width * 3 + 1], // State 0 (Vertical)
+            [0, 1, 2, 3], // State 1 (Horizontal)
+        ];
+
+        newShape.indices = lineRotations[currentShape.rotationState || 0];
+        newShape.rotationState = ((currentShape.rotationState || 0) + 1) % 2;
+
+        console.log("After Rotation, newShape.rotationState:", newShape.rotationState);
+    }
+
+    else {
+        pivot = currentShape.indices[1];  // anchor of pivot is the second index
+
+        currentShape.indices.forEach(index => {
+            const x = (index % width) - (pivot % width);
+            const y = Math.floor(index / width) - Math.floor(pivot / width);
+
+            // Rotate 90 degrees clockwise
+            const rotatedX = -y;
+            const rotatedY = x;
+
+            const newIndex = pivot + rotatedX + rotatedY * width;
+            newShape.indices.push(newIndex);
+        });
+    }
+
     if (isInBounds(newShape, currentPosition)) {
         removeShape();
-        currentShape = newShape;
+        currentShape.indices = newShape.indices;
+        if (newShape.rotationState !== undefined) {
+            currentShape.rotationState = newShape.rotationState;
+        }
         drawShape();
-    } else {
+    }
+
+
+    else {
         // Try to "kick" the shape into a valid position
-        const kickOffsets = [-1, 1];
+        const kickOffsets = [-1, 1, -width, width];
         for (const offset of kickOffsets) {
             if (isInBounds(newShape, currentPosition + offset)) {
                 removeShape();
                 currentPosition += offset;
-                currentShape = newShape;
+                currentShape.indices = newShape.indices;
+                if (newShape.rotationState !== undefined) {
+                    currentShape.rotationState = newShape.rotationState; // Update the rotation state if it exists
+                }
                 drawShape();
                 break;
             }
         }
     }
 }
+
+
 
 
 
@@ -218,26 +274,41 @@ function deleteRow() {
             rowsToDelete.push(y);
         }
     }
+
+    // Log the rows to delete
+    console.log("Rows to Delete:", rowsToDelete);
+
+    // Sort rows in descending order
+    rowsToDelete.sort((a, b) => b - a);
+
     // Delete multiple rows at once
     rowsToDelete.forEach(y => {
+        console.log("Deleting row:", y); // Log the row being deleted
+
+        // Remove 'full' and clear className
         const row = Array.from({ length: width }, (_, x) => y * width + x);
         row.forEach(index => {
             cells[index].classList.remove('full');
             cells[index].className = '';
         });
+
+        // Debug log
+        console.log("Deleted row", y);
+
         // Move all rows above the deleted ones down
         for (let aboveY = y - 1; aboveY >= 0; aboveY--) {
             const aboveRow = Array.from({ length: width }, (_, x) => aboveY * width + x);
             aboveRow.forEach(index => {
                 if (cells[index].classList.contains('full')) {
-                    cells[index + width].classList.add('full');
-                    cells[index + width].className = cells[index].className;
+                    cells[index + width].className = cells[index].className;  // Update this line
+                    cells[index + width].classList.add('full');  // Update this line
                     cells[index].classList.remove('full');
                     cells[index].className = '';
                 }
             });
         }
     });
+
     // Update the score
     scoreCal(rowsToDelete.length);
     deletedRows += rowsToDelete.length;
@@ -293,8 +364,14 @@ function moveDown() {
 
 // game over
 function isGameOver() {
+    // Check the TL corner
     const topLeftCorner = [0, 1, width, width + 1];
-    if (topLeftCorner.some(index => cells[index]?.classList.contains('full'))) {
+    const topLeftFull = topLeftCorner.some(index => cells[index]?.classList.contains('full'));
+
+    // check AFTER landing if in top row
+    const shapeInTopRow = currentShape.indices.some(index => (currentPosition + index) < width);
+
+    if (topLeftFull || shapeInTopRow) {
         clearInterval(timerId);
         if (confirm('Game Over. Click OK to restart.')) {
             restartGame();
