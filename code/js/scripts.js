@@ -275,11 +275,10 @@ function deleteRow() {
         }
     }
 
-    // Log the rows to delete
-    console.log("Rows to Delete:", rowsToDelete);
 
     // Sort rows in descending order
     rowsToDelete.sort((a, b) => b - a);
+    console.log("Sorted Rows to Delete:", rowsToDelete);
 
     // Delete multiple rows at once
     rowsToDelete.forEach(y => {
@@ -292,23 +291,24 @@ function deleteRow() {
             cells[index].className = '';
         });
 
-        // Debug log
-        console.log("Deleted row", y);
+    });
 
-        // Move all rows above the deleted ones down
-        for (let aboveY = y - 1; aboveY >= 0; aboveY--) {
+    // Move above deleted rows down, AFTER all deletions
+    if (rowsToDelete.length > 0) {
+        for (let aboveY = rowsToDelete[0] - 1; aboveY >= 0; aboveY--) {
             const aboveRow = Array.from({ length: width }, (_, x) => aboveY * width + x);
+            const rowsBelow = rowsToDelete.filter(row => row > aboveY).length; // Number of deleted rows below this one
             aboveRow.forEach(index => {
                 if (cells[index].classList.contains('full')) {
-                    cells[index + width].className = cells[index].className;  // Update this line
-                    cells[index + width].classList.add('full');  // Update this line
+                    cells[index + (width * rowsBelow)].className = cells[index].className;  // Move down by 'rowsBelow' rows
+                    cells[index + (width * rowsBelow)].classList.add('full');  // Move down by 'rowsBelow' rows
                     cells[index].classList.remove('full');
                     cells[index].className = '';
                 }
             });
         }
-    });
-
+    }
+    
     // Update the score
     scoreCal(rowsToDelete.length);
     deletedRows += rowsToDelete.length;
@@ -318,6 +318,7 @@ function deleteRow() {
     timerId = setInterval(moveDown, interval);
     document.querySelector('.speed-rank').innerText = `Speed Rank: ${speedRank}`;
 }
+
 
 
 // move down
