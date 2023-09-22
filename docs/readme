@@ -1,0 +1,544 @@
+
+Tetris Project
+Description
+This is a web-based Tetris game built using HTML, CSS, and JavaScript. The game has a standard Tetris size grid of 10x20, where Tetris shapes randomly generate at the top and players can move them into a position at the bottom. Shapes stack on top of each other and lines are deleted if a full row is filled. The game has animations, buttons, pause and play, rotation, sounds and local high score storage. 
+
+Deployment link
+
+You can find the project at this link:
+https://weezleb.github.io/tetris-project/
+
+Getting Started/Code Installation
+
+Find the project on Github (https://github.com/weezleb/tetris-project)
+Clone the repository to your local drive
+Open the index.html file
+
+Timeframe & Working Team 
+
+Project timeline was a week (7 days)
+Worked independently 
+
+Technologies Used
+
+Front End
+
+- HTML5: For structuring the game board and UI elements.
+- CSS3: For styling the game board, shapes, and UI.
+- JavaScript (ES6): For game logic, shape manipulation, and interactivity.
+
+Development Tools
+
+- Git: For version control.
+- GitHub: For repository hosting.
+- Visual Studio Code: As the code editor.
+- NPM: For package management.
+
+Brief
+
+Tetris is a puzzle game where the player has to fit different shaped blocks (called Tetriminos) together so that they make a complete line across the playing board. Once a line is achieved it is removed from the game board and the player's score is increased.
+
+The player can move the Tetriminos left and right and rotate them clockwise in 90º increments.
+
+The aim of the game is to get as many points as possible before the game board is filled with Tetriminos.
+
+Resources
+
+[Tetris - NES Gameplay - Youtube](https://www.youtube.com/watch?v=CvUK-YWYcaE)
+ [Tetris - Wikipedia](https://en.wikipedia.org/wiki/Tetris)
+
+Requirements:
+
+The game should stop if a Tetrimino fills the highest row of the game board
+The player should be able to rotate each Tetrimino about its own axis
+If a line is completed it should be removed and the pieces above should take its place
+
+Suggested enhancements
+
+Responsive design
+Speed increases over time
+Persistent leaderboard using `localStorage`
+
+***Planning***
+Build/Code Process
+I initially started a digital sketch of what I wanted the screen to look like and the basic controls I wanted it to have. The sketches are included in the game file.
+The fundamentals of the game are:
+10x20 grid creation with boundaries
+Random shape generation
+Moving the shape left and right
+Shapes falling
+Rotating the shape
+The shape falling down
+Row deletion
+Of course, the infamous theme song
+Animations, score and other caveats 
+High score keeping
+
+```javaScript
+Create Grid
+// grid
+function createGrid() {
+    for (let i = 0; i < cellCount; i++) {
+        const cell = document.createElement('div');  // Creates a new div element for each cell
+        cell.dataset.index = i;  // Assigns an index to each cell
+        grid.appendChild(cell);  // Appends the cell to the grid
+        cells.push(cell);  // Adds the cell to the cells array
+    }
+    drawShape();  // Draws the initial shape
+}
+
+Logic
+- The `createGrid` function initialises the game grid.
+- It loops through the total number of cells (`cellCount`) and creates a `div` for each cell.
+- Each cell is given an index and appended to the `grid`.
+- Finally, it calls `drawShape()` to draw the initial shape on the grid.
+
+***I thought of plotting the shape’s blocks on the grid to then give them a full shape. Then, using a random shape function to randomly select between them.***
+
+Shapes:
+logic behind the values within the shape definitions, the `tShape` as an example
+
+```javascript
+const tShape = {
+  indices: [1, width + 1, width * 2 + 1, width + 2],
+  type: 'tShape'
+};
+```
+
+In this `tShape` definition:
+
+- `indices` is an array that contains four values: `[1, width + 1, width * 2 + 1, width + 2]`.
+- `type` specifies that this shape is a 'tShape'.
+
+logic behind these `indices` values:
+
+1. `1`: This is the relative position of the first cell of the Tetris piece within a 2D grid. In this case, it represents one cell to the right of the top-center cell.
+
+2. `width + 1`: This value is used to position the second cell of the Tetris piece, which is one row below and one column to the right of the first cell. The addition of `width` moves down one row, and `+1` moves one cell to the right.
+
+3. `width * 2 + 1`: This value is used to position the third cell of the Tetris piece, which is two rows below and one column to the right of the first cell. `width * 2` moves down two rows, and `+1` moves one cell to the right.
+
+4. `width + 2`: Finally, this value is used to position the fourth cell of the Tetris piece, which is one row below and two columns to the right of the first cell. `width` moves down one row, and `+2` moves two cells to the right.
+
+These values, when applied to a grid, create the specific arrangement of cells that forms a 'T' shape:
+
+
+ X X X
+   X
+
+
+'X' represents the filled cells of the Tetris piece, and the shape resembles the letter 'T'.
+
+Similar logic is applied to other shapes, adjusting the indices to create their unique patterns within the grid. The values are carefully chosen to ensure that when these positions are filled within the grid, they form the desired shape for that Tetris piece.
+***Get Random Shape***
+
+// Random selection of shape
+function getRandomShape() {
+    const randomIndex = Math.floor(Math.random() * shapes.length);  // Generates a random index
+    return shapes[randomIndex];  // Returns a random shape
+}
+currentShape = getRandomShape()  // Sets the current shape to a random shape
+
+
+***Usage***
+Use the A and D keys to move the shape left and right, respectively.
+Use the S key to move the shape down.
+Use the J key to rotate the shape.
+Use the P key to pause and unpause the game.
+Use the Spacebar for a hard drop.
+
+***Rotation***
+
+I found the rotation of the shape the most difficult. My line shape and mirrored zigzag shape proved the most difficult. The shape kept breaking up, so I created specialist instructions for them within the rotate function:
+Rotate Shape Function
+```JavaScript
+// Rotate the shape 90 degrees
+function rotateShape() {
+    const newShape = {
+        indices: [],
+        type: currentShape.type,
+        orientation: currentShape.orientation || null,
+        rotationState: (currentShape.rotationState || 0)
+    };
+
+    // specific for mean MZZS >:(
+    if (currentShape.type === 'mirroredZigzagShape') {
+        // first block pivot point
+        const pivotIndex = currentShape.indices[0];
+        const pivotX = pivotIndex % width;
+        const pivotY = Math.floor(pivotIndex / width);
+
+        // rotate around pivot point
+        newShape.indices = currentShape.indices.map(index => {
+            const x = index % width - pivotX;
+            const y = Math.floor(index / width) - pivotY;
+
+            // rotation logic
+            const rotatedX = -y;
+            const rotatedY = x;
+
+            // translate to the grid
+            return (pivotY + rotatedY) * width + (pivotX + rotatedX);
+        });
+    }
+    // specific for stinky LS
+    else if (currentShape.type === 'lineShape') {
+        console.log("Before Rotation, currentShape.rotationState:", currentShape.rotationState);
+
+        const lineRotations = [
+            [1, width + 1, width * 2 + 1, width * 3 + 1], // State 0 (Vertical)
+            [0, 1, 2, 3], // State 1 (Horizontal)
+        ];
+
+        newShape.indices = lineRotations[currentShape.rotationState || 0];
+        newShape.rotationState = ((currentShape.rotationState || 0) + 1) % 2;
+
+        console.log("After Rotation, newShape.rotationState:", newShape.rotationState);
+    }
+
+    else {
+        const pivot = currentShape.indices[1];  // anchor of pivot is the second index
+
+        currentShape.indices.forEach(index => {
+            const x = (index % width) - (pivot % width);
+            const y = Math.floor(index / width) - Math.floor(pivot / width);
+
+            // Rotate 90 degrees clockwise
+            const rotatedX = -y;
+            const rotatedY = x;
+
+            const newIndex = pivot + rotatedX + rotatedY * width;
+            newShape.indices.push(newIndex);
+        });
+    }
+
+    if (isInBounds(newShape, currentPosition)) {
+        removeShape();
+        currentShape.indices = newShape.indices;
+        if (newShape.rotationState !== undefined) {
+            currentShape.rotationState = newShape.rotationState;
+        }
+        drawShape();
+    }
+
+
+    else {
+        // try "kick"
+        const kickOffsets = [-1, 1, -width, width];
+        for (const offset of kickOffsets) {
+            const newKickPosition = currentPosition + offset;
+            if (isInBounds(newShape, newKickPosition)) {
+                // Check if this new position doesn't violate the boundaries
+                const willWrapAroundLeft = isAtLeftBoundary(newShape, newKickPosition) && offset === 1;
+                const willWrapAroundRight = isAtRightBoundary(newShape, newKickPosition) && offset === -1;
+
+                if (!willWrapAroundLeft && !willWrapAroundRight) {
+                    removeShape();
+                    currentPosition = newKickPosition;  // Update position
+                    currentShape.indices = newShape.indices;
+                    if (newShape.rotationState !== undefined) {
+                        currentShape.rotationState = newShape.rotationState; // Update rotation state if it exists
+                    }
+                    drawShape();
+                    break;
+                }
+            }
+        }
+    }
+}
+```
+
+The Grid and 1D Array
+In a grid-based game like Tetris, the grid is usually represented as a 1D array. To convert a 1D index to 2D coordinates, you'd typically use these formulas:
+- `x = index % width`
+- `y = Math.floor(index / width)`
+
+The Code
+javascript
+const x = (index % width) - (pivot % width);
+const y = Math.floor(index / width) - Math.floor(pivot / width);
+
+`index % width` and `Math.floor(index / width)`
+These parts calculate the `x` and `y` coordinates of the current cell in the grid.
+
+ `pivot % width` and `Math.floor(pivot / width)`
+These parts calculate the `x` and `y` coordinates of the pivot cell in the grid.
+
+Subtraction
+The `-` in both lines is to find the relative `x` and `y` coordinates of the current cell with respect to the pivot cell. 
+
+Why Relative Coordinates?
+The idea is to treat the pivot cell as the "origin" (0,0) for our shape. By doing this, it becomes easier to perform the rotation around this point.
+
+Example
+The grid width is 10, the index of a cell is 35, and the pivot index is 25.
+- The `x` coordinate of the cell would be `35 % 10 = 5`
+- The `x` coordinate of the pivot would be `25 % 10 = 5`
+- The relative `x` would be `5 - 5 = 0`
+
+- The `y` coordinate of the cell would be `Math.floor(35 / 10) = 3`
+- The `y` coordinate of the pivot would be `Math.floor(25 / 10) = 2`
+- The relative `y` would be `3 - 2 = 1`
+
+So, the cell is at `(0, 1)` relative to the pivot.
+
+
+const rotatedX = -y;
+const rotatedY = x;
+
+apply a 90-degree rotation formula to the coordinates. In 2D geometry, to rotate a point `(x, y)` 90 degrees counterclockwise around the origin `(0, 0)`, you can use the following formulas:
+- `newX = -y`
+- `newY = x`
+
+How Does It Work?
+
+- A 90-degree rotation counterclockwise would move it to a new position.
+- According to the formula, the new `x` would be `-3` (which is `-y`), and the new `y` would be `2` (which is `x`).
+- So, the point `(2, 3)` would move to `(-3, 2)` after a 90-degree rotation.
+
+In the code, `rotatedX` and `rotatedY` are the new coordinates after rotating the original `x` and `y` by 90 degrees. This is done relative to the pivot point, which acts as the origin for this rotation.
+
+2. Specific Rotation Logic for 'mirroredZigzagShape':**
+
+- If the current shape being rotated is a 'mirroredZigzagShape', the function applies specific rotation logic tailored to this shape.
+
+- The logic involves determining the pivot point, which is the first index of the current shape. It calculates the pivot's X and Y coordinates within the grid.
+
+- Then, it iterates through the current shape's indices and applies a 90-degree clockwise rotation around the pivot point. The result is a set of new indices for the `newShape`.
+
+- Finally, it translates the rotated indices back to their positions on the game grid.
+
+- This specific logic is necessary because 'mirroredZigzagShape' rotates differently from other shapes, and its pivot point is unique.
+
+**3. Specific Rotation Logic for 'lineShape':**
+
+- The 'lineShape' has two possible states: vertical and horizontal. The function handles these states explicitly.
+
+- It defines `lineRotations`, an array that represents the two possible rotations of the 'lineShape'. One state is vertical, and the other is horizontal.
+
+- The function updates the `newShape` indices based on the current rotation state. It also cycles the rotation state between the two states.
+
+- This logic ensures that the 'lineShape' toggles between its vertical and horizontal orientations when rotated.
+
+***Delete Rows***
+```javaScript
+
+// row deletion
+function deleteRow() {
+    let rowsToDelete = [];
+    for (let y = height - 1; y >= 0; y--) {
+        const row = Array.from({ length: width }, (_, x) => y * width + x);
+        if (row.every(index => cells[index].classList.contains('full'))) {
+            rowsToDelete.push(y);
+        }
+    }
+
+    // Sort rows in descending order
+    rowsToDelete.sort((a, b) => b - a);
+
+    // Add animation and schedule removal
+    rowsToDelete.forEach(y => {
+        const row = Array.from({ length: width }, (_, x) => y * width + x);
+        row.forEach(index => {
+            cells[index].classList.add('row-deletion-animation');
+        });
+    });
+
+    // Handle animation completion, delete rows, and move cells down
+    setTimeout(() => {
+        // Delete the rows
+        rowsToDelete.forEach(y => {
+            const row = Array.from({ length: width }, (_, x) => y * width + x);
+            row.forEach(index => {
+                cells[index].classList.remove('row-deletion-animation', 'full');
+                cells[index].className = '';
+            });
+        });
+
+        // Move above deleted rows down, AFTER all deletions
+        if (rowsToDelete.length > 0) {
+            for (let aboveY = rowsToDelete[0] - 1; aboveY >= 0; aboveY--) {
+                const aboveRow = Array.from({ length: width }, (_, x) => aboveY * width + x);
+                const rowsBelow = rowsToDelete.filter(row => row > aboveY).length;
+                aboveRow.forEach(index => {
+                    if (cells[index].classList.contains('full')) {
+                        cells[index + (width * rowsBelow)].className = cells[index].className;
+                        cells[index + (width * rowsBelow)].classList.add('full');
+                        cells[index].classList.remove('full');
+                        cells[index].className = '';
+                    }
+                });
+            }
+        }
+        // Update the score
+        scoreCal(rowsToDelete.length);
+        deletedRows += rowsToDelete.length;
+        speedRank = Math.min(Math.floor(deletedRows / 10) + 1, maxSpeedRank);
+        interval = baseInterval / speedRank;
+        clearInterval(timerId);
+        timerId = setInterval(moveDown, interval);
+        // row deletion sound
+        if (rowsToDelete.length >= 1 && rowsToDelete.length <= 3) {
+            rowDeletionSound.currentTime = 0;
+            rowDeletionSound.play();
+        }
+        // Check if 4 rows are deleted at once (Tetris!)
+        if (rowsToDelete.length === 4) {
+            tetrisSound.currentTime = 0;
+            tetrisSound.play();
+            gotTetris.style.display = 'block';
+            gotTetris.classList.add('tetris-animation');
+
+            // Hide the tetris + remove animation after
+            setTimeout(() => {
+                gotTetris.style.display = 'none';
+                gotTetris.classList.remove('tetris-animation');
+            }, 3000);
+        }
+
+        // Check if speed rank has increased
+
+        if (speedRank > previousSpeedRank) {
+            speedRankUpSound.currentTime = 0;
+            speedRankUpSound.play();
+            speedRankElement.innerText = `Speed Rank: ${speedRank}`;
+            speedRankElement.classList.add('level-up-animation');
+            // Speed up  bg music by 10%
+            bgMusic.playbackRate += 0.1;
+            // Remove the animation class after it completes
+            setTimeout(() => {
+                speedRankElement.classList.remove('level-up-animation');
+            }, 1000);
+        }
+
+        // Update the previous speed rank
+        previousSpeedRank = speedRank;
+    }, 500);
+}
+
+```
+Break down:
+deleteRow()` function 
+
+1. **Identify Rows to Delete:**
+   - The function begins by initialising an empty array called `rowsToDelete` to keep track of rows that need to be deleted.
+   - It uses a `for` loop to iterate through the rows of the game grid. It starts from the bottom row (`height - 1`) and moves upwards to row 0.
+   - For each row, it creates an array called `row`, which contains the indices of the cells in that row.
+
+2. **Check Row Completeness:**
+   - Inside the loop, it checks whether every cell in the `row` is marked as 'full'. This check is performed using the `every()` method. If all cells in the row are 'full', it means the row is complete and ready for deletion.
+
+3. **Track Rows for Deletion:**
+   - If a row is found to be complete, its `y` index (vertical position) is added to the `rowsToDelete` array. This array will be used later to determine which rows should be deleted.
+
+4. **Sort Rows for Deletion:**
+   - After identifying rows for deletion, the function sorts the `rowsToDelete` array in descending order. Sorting is crucial because it ensures that rows are deleted from the bottom to the top. This order prevents issues with cell movement during the deletion process.
+
+5. **Add Deletion Animation:**
+   - The function then goes through each row marked for deletion and adds a CSS animation class (`'row-deletion-animation'`) to all cells in those rows. This class triggers an animation effect for the cells.
+
+6. **Handle Animation Completion and Deletion:**
+   - After applying the deletion animation, the function schedules the removal of the rows and cell movement using `setTimeout()`. This delay allows the animation to complete before actual deletion.
+
+7. **Delete Rows:**
+   - Once the delay elapses, the `setTimeout()` callback function is executed.
+   - For each row marked for deletion, the function removes the `'row-deletion-animation'` and `'full'` classes from all cells in that row. This effectively deletes the row by resetting the cell classes to an empty state.
+
+8. **Move Cells Down:**
+   - After deleting rows, the function addresses the empty spaces left by moving cells in rows above the deleted rows downward. This ensures that the game grid remains compact and free of gaps.
+
+9. **Update Score and Speed:**
+   - The function calculates the number of rows deleted and updates the player's score accordingly. It also tracks the total number of deleted rows and adjusts the game's speed rank based on the player's progress.
+
+10. **Handle Sound Effects:**
+    - Depending on the number of rows deleted (1 to 3), the function plays a row deletion sound effect. This adds audio feedback to the gameplay.
+
+11. **Check for Tetris:**
+    - If four rows are deleted at once (a Tetris), the function plays a Tetris sound and displays a Tetris animation. Tetris is a significant achievement in the game.
+
+12. **Check for Speed Rank Increase:**
+    - If the player's speed rank increases due to reaching a certain number of deleted rows, the function plays a level-up sound effect, updates the displayed speed rank, and adds an animation effect to the speed rank element. It also slightly increases the background music's playback rate to make the game faster.
+
+13. **Update Previous Speed Rank:**
+    - Finally, the function updates the `previousSpeedRank` variable to keep track of the previous speed rank for future comparisons.
+Those are the breakdowns of the most chalenging and essential aspects of the code. Other features include:
+Responsive Grid: The game features a responsive grid that adjusts to the browser window.
+Shape Rotation: Players can rotate shapes to fit them into the grid.
+Pause Functionality: The game can be paused and resumed.
+Sound Effects: Includes various sound effects for game events like row deletion, game over, etc.
+Speed Rank: The game speeds up as you clear more rows.
+High Scores: Keeps track of high scores.
+Next Shape Preview: Shows the next shape that will appear.
+
+
+***Challenges**
+
+Introduction
+This project was certainly not without its challenges. From algorithmic hurdles to debugging nightmares (and very late nights!), I faced a variety of issues that while ultimately made me a better coder, certainly made a few more grey hairs on my head. Below are some of the challenges I encountered and how I tackled them.
+
+Technical Challenges
+Rotating Shapes:
+The Challenge: The mirrored zigzag shapes and the line shape required special functions for rotation, unlike the other shapes. Additionally, the shapes could rotate through the boundary, which was not intended.
+Problem-Solving: I had to create separate functions to handle these special cases. For the boundary issue, I added extra checks to prevent rotation when the shape was near the edge.
+
+Row Deletion:
+The Challenge: Deleting multiple rows at once left a gap, as the blocks didn't fall down to take the place of the deleted rows.
+Problem-Solving: I realized that the function was pulling down the row above the deleted one, which was also empty due to deletion. I rearranged the code to delete the rows first and then pull down the rows above them.
+
+Team Dynamics/Project Management
+While this was a solo project, that still meant I had one teammate that I spent endless hours with, myself. Spending long periods on your own can be difficult so I needed to find a good balance between the project and health and wellbeing. Managing my time and setting milestones were challenges in themselves. I used tools like Git for version control, which helped me stay organised. I also went on regular walks and drank a lot of water. 
+
+Tools/Tech Used
+JavaScript: For the game logic and functions.
+HTML/CSS: For the game board and styling.
+Git: For version control.
+
+### Wins 
+#### Highlights
+
+- **It Works!**: The game is fully functional, complete with sound effects and smooth movements. The rotation logic, which was a major hurdle, works seamlessly.
+  
+- **Visual & Audio Effects**: The ghost shape and hard drop features add an extra layer of fun to the game. The animations and sound effects make the gameplay more engaging.
+
+#### Collaboration & Design
+
+While this was a solo project, the visual design is something I'm particularly proud of. The game board, shapes, and animations all contribute to a visually appealing experience.
+
+
+### Key Learnings/Takeaways 
+
+
+#### Technologies & Tools
+
+- **JavaScript**: I gained a deeper understanding of object manipulation in a grid and various functions.
+  
+- **HTML/CSS**: I learned more about styling, implementing audio, and using modals. Animations were a fun addition to my skill set.
+
+#### Engineering Processes
+
+I became more comfortable with self-management and project planning, even though this was a solo project. The use of online resources for learning and debugging was invaluable.
+
+
+### Bugs 
+
+#### Introduction
+
+No project is perfect, and acknowledging the bugs is the first step towards fixing them. Here is the known issue:
+
+- **Boundary Rotation**: Sometimes shapes can still rotate through the boundary, causing them to wrap around. Despite multiple attempts to fix this, the issue persists.
+
+
+
+### Future Improvements 
+
+#### Introduction
+
+The project may be complete, but the ideas for improvement are endless. Here's what I'd love to add in the future:
+
+- **Global High Scores**: Implementing a global server for high scores would add a competitive edge to the game.
+  
+- **Visual Overhaul**: I'd like to enhance the visual design, adding more animations and a sleeker interface.
+
+- **Options & Controls Panel**: A settings panel where players can customize controls and other game settings.
+
+```

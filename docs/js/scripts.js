@@ -156,7 +156,7 @@ function hardDrop() {
     // Draw new shape and update next shape preview
     drawShape();
     nextShapePreview();
-    
+
 }
 
 
@@ -749,8 +749,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 $("#submitHighScore").click(function () {
     const playerName = $("#playerName").val();
-    const finalScore = score;  
-    
+    const finalScore = score;
+
     localStorage.setItem(playerName, finalScore);
 
     // Close the modal
