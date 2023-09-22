@@ -143,7 +143,9 @@ function hardDrop() {
             cell.classList.add(currentShape.type);
         }
     });
-
+    if (isGameOver()) {
+        return;
+    }
     deleteRow();
 
     // Update shape and position 
@@ -154,6 +156,7 @@ function hardDrop() {
     // Draw new shape and update next shape preview
     drawShape();
     nextShapePreview();
+    
 }
 
 
@@ -301,7 +304,7 @@ function rotateShape() {
                 // Check if this new position doesn't violate the boundaries
                 const willWrapAroundLeft = isAtLeftBoundary(newShape, newKickPosition) && offset === 1;
                 const willWrapAroundRight = isAtRightBoundary(newShape, newKickPosition) && offset === -1;
-                
+
                 if (!willWrapAroundLeft && !willWrapAroundRight) {
                     removeShape();
                     currentPosition = newKickPosition;  // Update position
@@ -315,7 +318,7 @@ function rotateShape() {
             }
         }
     }
-}    
+}
 
 
 // Check if shape is in boundaries of grid and other shapes
@@ -551,17 +554,21 @@ function isGameOver() {
     const shapeInTopRow = currentShape.indices.some(index => (currentPosition + index) < width);
     bgMusic.pause();
     bgMusic.currentTime = 0;
+
     if (topLeftFull || shapeInTopRow) {
         clearInterval(timerId);
         gameOverSound.currentTime = 0;
         gameOverSound.play();
-        if (confirm('Game Over. Click OK to restart.')) {
-            restartGame();
-        }
+        stopAllAudio();
+        // Show the modal
+        $("#gameOverModal").modal('show');
+
+        // Update the final score in the modal
+        $("#finalScore").text(yourScoreVariable);
+
         return true;
     }
     return false;
-
 }
 
 
@@ -613,6 +620,14 @@ function startGame() {
     if (isBgMusicOn) {
         bgMusic.play();
     }
+
+    populateHighScores();
+
+    $("#submitHighScore").click(function () {
+
+        populateHighScores();
+    });
+
 }
 
 function initialiseGame() {
@@ -642,12 +657,45 @@ function restartGame() {
     });
     resetScore();
     startGame();
+
+    populateHighScores();
+    $("#submitHighScore").click(function () {
+        populateHighScores();
+    });
 }
 
+function populateHighScores() {
+    $("#highScores").empty();
+    $("#highScores").append("<div>High Scores:</div>");
+
+    let highScores = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const playerName = localStorage.key(i);
+        const playerScore = localStorage.getItem(playerName);
+        highScores.push({ playerName, playerScore: parseInt(playerScore) });
+    }
+
+    // Sort HSs in descending order
+    highScores.sort((a, b) => b.playerScore - a.playerScore);
+
+    highScores = highScores.slice(0, 10);
+
+    highScores.forEach((entry, index) => {
+        $("#highScores").append(`<div>${index + 1}. ${entry.playerName}: ${entry.playerScore}</div>`);
+    });
+}
+
+function stopAllAudio() {
+    const allAudioElements = document.querySelectorAll('audio');
+    allAudioElements.forEach((audioElement) => {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+    });
+}
 
 // ! Remaining buttons and event listeners
 
-const restartButton = document.querySelector('.restart');
+const restartButton = document.getElementById('restart');
 restartButton.addEventListener('click', () => {
     restartGame();
     togglePause();
@@ -699,3 +747,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+$("#submitHighScore").click(function () {
+    const playerName = $("#playerName").val();
+    const finalScore = score;  
+    
+    localStorage.setItem(playerName, finalScore);
+
+    // Close the modal
+    $("#gameOverModal").modal('hide');
+
+    // You can now display this high score somewhere on your page
+    // For example, above the score counter
+    $("#highScores").append(`<div>${playerName}: ${finalScore}</div>`);
+
+    // Restart the game if you wish
+    restartGame();
+});
