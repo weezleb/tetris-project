@@ -1,6 +1,7 @@
 // ! Firebase
-import { initializeApp } from "../node_modules/firebase/app";
-import { getFirestore, collection, getDocs, addDoc } from "../node_modules/firebase/firestore";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+
 
 const firebaseConfig = {
     apiKey: "AIzaSyDhHIajXHYyG-oV8MRTs-b3s8xx3qGCfnI",
@@ -23,7 +24,7 @@ async function addHighScore(firstName, score) {
     score: score,
   });
 }
-import { query, orderBy, limit } from "../node_modules/firebase/firestore";
+import { query, orderBy, limit } from "firebase/firestore";
 
 async function getTop10HighScores() {
   const highScoresQuery = query(highScoresCollection, orderBy("score", "desc"), limit(10));
