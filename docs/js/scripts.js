@@ -267,7 +267,7 @@ function rotateShape() {
     }
 
     else {
-        pivot = currentShape.indices[1];  // anchor of pivot is the second index
+        const pivot = currentShape.indices[1];  // anchor of pivot is the second index
 
         currentShape.indices.forEach(index => {
             const x = (index % width) - (pivot % width);
@@ -293,22 +293,30 @@ function rotateShape() {
 
 
     else {
-        // Try to "kick" the shape into a valid position
+        // try "kick"
         const kickOffsets = [-1, 1, -width, width];
         for (const offset of kickOffsets) {
-            if (isInBounds(newShape, currentPosition + offset)) {
-                removeShape();
-                currentPosition += offset;
-                currentShape.indices = newShape.indices;
-                if (newShape.rotationState !== undefined) {
-                    currentShape.rotationState = newShape.rotationState; // Update the rotation state if it exists
+            const newKickPosition = currentPosition + offset;
+            if (isInBounds(newShape, newKickPosition)) {
+                // Check if this new position doesn't violate the boundaries
+                const willWrapAroundLeft = isAtLeftBoundary(newShape, newKickPosition) && offset === 1;
+                const willWrapAroundRight = isAtRightBoundary(newShape, newKickPosition) && offset === -1;
+                
+                if (!willWrapAroundLeft && !willWrapAroundRight) {
+                    removeShape();
+                    currentPosition = newKickPosition;  // Update position
+                    currentShape.indices = newShape.indices;
+                    if (newShape.rotationState !== undefined) {
+                        currentShape.rotationState = newShape.rotationState; // Update rotation state if it exists
+                    }
+                    drawShape();
+                    break;
                 }
-                drawShape();
-                break;
             }
         }
     }
-}
+}    
+
 
 // Check if shape is in boundaries of grid and other shapes
 function isInBounds(shape, position) {
@@ -553,11 +561,11 @@ function isGameOver() {
         return true;
     }
     return false;
-    
+
 }
 
 
-  
+
 // Scoring function
 function scoreCal(rowsDeleted) {
     // scoring based on google 
@@ -636,7 +644,7 @@ function restartGame() {
     startGame();
 }
 
-  
+
 // ! Remaining buttons and event listeners
 
 const restartButton = document.querySelector('.restart');
@@ -691,4 +699,3 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-  
