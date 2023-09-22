@@ -1,3 +1,44 @@
+// ! Firebase
+import { initializeApp } from "../node_modules/firebase/app";
+import { getFirestore, collection, getDocs, addDoc } from "../node_modules/firebase/firestore";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDhHIajXHYyG-oV8MRTs-b3s8xx3qGCfnI",
+    authDomain: "tetrishighscores-e010d.firebaseapp.com",
+    projectId: "tetrishighscores-e010d",
+    storageBucket: "tetrishighscores-e010d.appspot.com",
+    messagingSenderId: "854037572598",
+    appId: "1:854037572598:web:4910a05ce559be9e9675d7",
+    measurementId: "G-PYQX7LF9CX"
+  };
+
+// initialise Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore();
+const highScoresCollection = collection(db, "highScores");
+//add firt name and high score
+async function addHighScore(firstName, score) {
+  await addDoc(highScoresCollection, {
+    firstName: firstName,
+    score: score,
+  });
+}
+import { query, orderBy, limit } from "../node_modules/firebase/firestore";
+
+async function getTop10HighScores() {
+  const highScoresQuery = query(highScoresCollection, orderBy("score", "desc"), limit(10));
+  const querySnapshot = await getDocs(highScoresQuery);
+  const highScores = [];
+  querySnapshot.forEach((doc) => {
+    highScores.push(doc.data());
+  });
+  return highScores;
+}
+
+
+
+
+
 // ! Variables
 const grid = document.querySelector('.grid');
 const pauseText = document.querySelector('.pause-text');
@@ -556,7 +597,25 @@ function isGameOver() {
     bgMusic.currentTime = 0;
 }
 
-
+function gameOver(finalScore) {
+    document.getElementById("finalScore").innerText = finalScore;
+    document.getElementById("gameOverModal").classList.remove("hidden");
+  }
+  
+  async function submitHighScore() {
+    const firstName = document.getElementById("firstNameInput").value;
+    const finalScore = parseInt(document.getElementById("finalScore").innerText);
+    
+    await addHighScore(firstName, finalScore);
+    
+    // Hide modal
+    document.getElementById("gameOverModal").classList.add("hidden");
+    
+    // Update high scores
+    const newHighScores = await getTop10HighScores();
+    updateHighScoresDisplay(newHighScores);
+  }
+  
 // Scoring function
 function scoreCal(rowsDeleted) {
     // scoring based on google 
@@ -635,6 +694,17 @@ function restartGame() {
     startGame();
 }
 
+function updateHighScoresDisplay(highScores) {
+    const highScoreDiv = document.getElementById("highScores");
+    highScoreDiv.innerHTML = ""; // Clear previous high scores
+    
+    highScores.forEach((score) => {
+      const scoreElement = document.createElement("p");
+      scoreElement.innerText = `${score.firstName}: ${score.score}`;
+      highScoreDiv.appendChild(scoreElement);
+    });
+  }
+  
 // ! Remaining buttons and event listeners
 
 const restartButton = document.querySelector('.restart');
@@ -688,3 +758,8 @@ window.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.next-shape-name').innerText = `Next Shape: ${nextShape.type}`;
     }
 });
+window.onload = async () => {
+    const initialHighScores = await getTop10HighScores();
+    updateHighScoresDisplay(initialHighScores);
+  };
+  

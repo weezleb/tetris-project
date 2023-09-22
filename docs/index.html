@@ -15,6 +15,12 @@
 
     <div class="grid-container">
       <div class="score-container">
+        <div id="gameOverModal" class="hidden">
+          <h2>Game Over</h2>
+          <p>Your Score: <span id="finalScore"></span></p>
+          <input type="text" id="firstNameInput" placeholder="First Name" />
+          <button onclick="submitHighScore()">Submit</button>
+        </div>        
         <div id="score">Score: 0</div>
         <div class="got-tetris">
           <p>TETRIS!</p>
@@ -46,7 +52,7 @@
   <audio id="speed-rank-up-sound" src="./audio/levelUpSound.mp3"></audio>
   <audio id="row-deletion-sound" src="./audio/rowDeletion.mp3"></audio>
   <audio id="tetrisSound" src="./audio/tetrisSound.mp3"></audio>
-  <script src="./js/scripts.js" charset="utf-8"></script>
+  <script type=module src="./js/scripts.js" charset="utf-8"></script>
 </body>
 
 
