@@ -598,24 +598,21 @@ function isGameOver() {
     bgMusic.currentTime = 0;
 }
 
-function gameOver(finalScore) {
+async function gameOver(finalScore) {
     document.getElementById("finalScore").innerText = finalScore;
     document.getElementById("gameOverModal").classList.remove("hidden");
-  }
-  
-  async function submitHighScore() {
-    const firstName = document.getElementById("firstNameInput").value;
-    const finalScore = parseInt(document.getElementById("finalScore").innerText);
-    
-    await addHighScore(firstName, finalScore);
-    
-    // Hide modal
-    document.getElementById("gameOverModal").classList.add("hidden");
-    
-    // Update high scores
+
+    // Prompt for name and add high score
+    const firstName = prompt('Enter your first name:');
+    if (firstName) {
+        await addHighScore(firstName, finalScore);
+    }
+
+    // Update the high scores display
     const newHighScores = await getTop10HighScores();
     updateHighScoresDisplay(newHighScores);
-  }
+}
+
   
 // Scoring function
 function scoreCal(rowsDeleted) {
@@ -648,7 +645,7 @@ function togglePause() {
 
 
 // Start game
-function startGame() {
+async function startGame() {
     nextShape = getRandomShape(); // Set nextShape first
     nextShapePreview(); // Update the next shape preview immediately
     currentPosition = Math.floor(width / 2);
@@ -664,9 +661,11 @@ function startGame() {
     if (isBgMusicOn) {
         bgMusic.play();
     }
+    const newHighScores = await getTop10HighScores(); 
+    updateHighScoresDisplay(newHighScores); 
 }
 
-function initialiseGame() {
+async function initialiseGame() {
     startGame();
     // start the music
     if (isBgMusicOn) {
@@ -675,6 +674,10 @@ function initialiseGame() {
     document.getElementById('start-game').style.display = 'none';  // Hide 
     const imgElement = document.getElementById('next-shape-img');
     imgElement.style.display = 'block'; // Show the image
+    setInterval(async () => {
+        const refreshedHighScores = await getTop10HighScores();
+        updateHighScoresDisplay(refreshedHighScores);
+    }, 30000);  
 }
 
 // Reset score function
@@ -684,7 +687,7 @@ function resetScore() {
 }
 
 // Restart Game
-function restartGame() {
+async function restartGame() {
     clearInterval(timerId);
     interval = baseInterval;
     cells.forEach(cell => {
@@ -693,6 +696,8 @@ function restartGame() {
     });
     resetScore();
     startGame();
+    const newHighScores = await getTop10HighScores();
+    updateHighScoresDisplay(newHighScores);
 }
 
 function updateHighScoresDisplay(highScores) {
@@ -762,5 +767,6 @@ window.addEventListener('DOMContentLoaded', () => {
 window.onload = async () => {
     const initialHighScores = await getTop10HighScores();
     updateHighScoresDisplay(initialHighScores);
+    
   };
   
