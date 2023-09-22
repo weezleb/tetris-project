@@ -483,7 +483,7 @@ Problem-Solving: I had to create separate functions to handle these special case
 
 Row Deletion:
 The Challenge: Deleting multiple rows at once left a gap, as the blocks didn't fall down to take the place of the deleted rows.
-Problem-Solving: I realized that the function was pulling down the row above the deleted one, which was also empty due to deletion. I rearranged the code to delete the rows first and then pull down the rows above them.
+Problem-Solving: I realised that the function was pulling down the row above the deleted one, which was also empty due to deletion. I rearranged the code to delete the rows first and then pull down the rows above them.
 
 Team Dynamics/Project Management
 While this was a solo project, that still meant I had one teammate that I spent endless hours with, myself. Spending long periods on your own can be difficult so I needed to find a good balance between the project and health and wellbeing. Managing my time and setting milestones were challenges in themselves. I used tools like Git for version control, which helped me stay organised. I also went on regular walks and drank a lot of water. 
@@ -539,6 +539,6 @@ The project may be complete, but the ideas for improvement are endless. Here's w
   
 - **Visual Overhaul**: I'd like to enhance the visual design, adding more animations and a sleeker interface.
 
-- **Options & Controls Panel**: A settings panel where players can customize controls and other game settings.
+- **Options & Controls Panel**: A settings panel where players can customise controls and other game settings.Such as a volume control. Dont get me wrong, I love the tetris theme. Has it become a bit triggering now? Yes, so I think it would be nice to have an option to turn it down a little rather than just off and on.
 
 ```
