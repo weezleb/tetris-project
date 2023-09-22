@@ -1,3 +1,41 @@
+// ! Firebase
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDhHIajXHYyG-oV8MRTs-b3s8xx3qGCfnI",
+    authDomain: "tetrishighscores-e010d.firebaseapp.com",
+    projectId: "tetrishighscores-e010d",
+    storageBucket: "tetrishighscores-e010d.appspot.com",
+    messagingSenderId: "854037572598",
+    appId: "1:854037572598:web:4910a05ce559be9e9675d7",
+    measurementId: "G-PYQX7LF9CX"
+  };
+
+// initialise Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore();
+const highScoresCollection = collection(db, "highScores");
+//add firt name and high score
+async function addHighScore(firstName, score) {
+  await addDoc(highScoresCollection, {
+    firstName: firstName,
+    score: score,
+  });
+}
+
+async function getTop10HighScores() {
+  const highScoresQuery = query(highScoresCollection, orderBy("score", "desc"), limit(10));
+  const querySnapshot = await getDocs(highScoresQuery);
+  const highScores = [];
+  querySnapshot.forEach((doc) => {
+    highScores.push(doc.data());
+  });
+  return highScores;
+}
+
+
+
+
+
 // ! Variables
 const grid = document.querySelector('.grid');
 const pauseText = document.querySelector('.pause-text');
@@ -541,8 +579,7 @@ function isGameOver() {
 
     // check AFTER landing if in top row
     const shapeInTopRow = currentShape.indices.some(index => (currentPosition + index) < width);
-    bgMusic.pause();
-    bgMusic.currentTime = 0;
+
     if (topLeftFull || shapeInTopRow) {
         clearInterval(timerId);
         gameOverSound.currentTime = 0;
@@ -553,9 +590,24 @@ function isGameOver() {
         return true;
     }
     return false;
-    
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
 }
 
+async function gameOver(finalScore) {
+    document.getElementById("finalScore").innerText = finalScore;
+    document.getElementById("gameOverModal").classList.remove("hidden");
+
+    // Prompt for name and add high score
+    const firstName = prompt('Enter your first name:');
+    if (firstName) {
+        await addHighScore(firstName, finalScore);
+    }
+
+    // Update the high scores display
+    const newHighScores = await getTop10HighScores();
+    updateHighScoresDisplay(newHighScores);
+}
 
   
 // Scoring function
@@ -589,7 +641,7 @@ function togglePause() {
 
 
 // Start game
-function startGame() {
+async function startGame() {
     nextShape = getRandomShape(); // Set nextShape first
     nextShapePreview(); // Update the next shape preview immediately
     currentPosition = Math.floor(width / 2);
@@ -605,9 +657,11 @@ function startGame() {
     if (isBgMusicOn) {
         bgMusic.play();
     }
+    const newHighScores = await getTop10HighScores(); 
+    updateHighScoresDisplay(newHighScores); 
 }
 
-function initialiseGame() {
+async function initialiseGame() {
     startGame();
     // start the music
     if (isBgMusicOn) {
@@ -615,7 +669,11 @@ function initialiseGame() {
     }
     document.getElementById('start-game').style.display = 'none';  // Hide 
     const imgElement = document.getElementById('next-shape-img');
-    imgElement.style.display = 'block'; // Show the image 
+    imgElement.style.display = 'block'; // Show the image
+    setInterval(async () => {
+        const refreshedHighScores = await getTop10HighScores();
+        updateHighScoresDisplay(refreshedHighScores);
+    }, 30000);  
 }
 
 // Reset score function
@@ -625,7 +683,7 @@ function resetScore() {
 }
 
 // Restart Game
-function restartGame() {
+async function restartGame() {
     clearInterval(timerId);
     interval = baseInterval;
     cells.forEach(cell => {
@@ -634,8 +692,20 @@ function restartGame() {
     });
     resetScore();
     startGame();
+    const newHighScores = await getTop10HighScores();
+    updateHighScoresDisplay(newHighScores);
 }
 
+function updateHighScoresDisplay(highScores) {
+    const highScoreDiv = document.getElementById("highScores");
+    highScoreDiv.innerHTML = ""; // Clear previous high scores
+    
+    highScores.forEach((score) => {
+      const scoreElement = document.createElement("p");
+      scoreElement.innerText = `${score.firstName}: ${score.score}`;
+      highScoreDiv.appendChild(scoreElement);
+    });
+  }
   
 // ! Remaining buttons and event listeners
 
@@ -690,5 +760,9 @@ window.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.next-shape-name').innerText = `Next Shape: ${nextShape.type}`;
     }
 });
-
+window.onload = async () => {
+    const initialHighScores = await getTop10HighScores();
+    updateHighScoresDisplay(initialHighScores);
+    
+  };
   

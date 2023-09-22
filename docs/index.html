@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tetris Game</title>
   <link rel="stylesheet" href="./css/styles.css">
-  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"></script>
+  <!-- <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"></script> -->
 
 </head>
 
@@ -18,12 +18,6 @@
 
     <div class="grid-container">
       <div class="score-container">
-        <div id="gameOverModal" class="hidden">
-          <h2>Game Over</h2>
-          <p>Your Score: <span id="finalScore"></span></p>
-          <input type="text" id="firstNameInput" placeholder="First Name" />
-          <button onclick="submitHighScore()">Submit</button>
-        </div>
         <div id="score">Score: 0</div>
         <div class="got-tetris">
           <p>TETRIS!</p>
